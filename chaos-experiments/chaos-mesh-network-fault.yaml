@@ -1,0 +1,17 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: az-1a-blackhole-simulation
+  namespace: prod
+spec:
+  action: loss
+  mode: all
+  selector:
+    namespaces:
+      - prod
+    nodeSelectors:
+      topology.kubernetes.io/zone: ap-south-1a
+  loss:
+    loss: "92"
+    correlation: "85"
+  duration: "5m"

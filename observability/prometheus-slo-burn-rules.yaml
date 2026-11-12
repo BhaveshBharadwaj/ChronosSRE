@@ -1,0 +1,37 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: chronos-sre-multi-window-slo-rules
+  namespace: monitoring
+spec:
+  groups:
+    - name: slo.burnrate.rules
+      rules:
+        # P1 Fast-Burn Alert: 14.4x burn rate over both 1h and 5m windows (2% of 30d budget consumed in 1h)
+        - alert: SLOFastBurnPageP1
+          expr: |
+            (
+              job:slo_http_errors:ratio_rate1h{job="checkout-orchestrator"} > (14.4 * 0.0005)
+              and
+              job:slo_http_errors:ratio_rate5m{job="checkout-orchestrator"} > (14.4 * 0.0005)
+            )
+          for: 2m
+          labels:
+            severity: page_p1
+            release_gate: freeze
+          annotations:
+            summary: "High 1h/5m SLO Error Budget Fast Burn (14.4x) on checkout-orchestrator"
+            runbook_url: "https://github.com/chronos-sre/runbooks/blob/main/RB-101.md"
+
+        # P1 Medium-Burn Alert: 6.0x burn rate over both 6h and 30m windows
+        - alert: SLOMediumBurnPageP1
+          expr: |
+            (
+              job:slo_http_errors:ratio_rate6h{job="checkout-orchestrator"} > (6.0 * 0.0005)
+              and
+              job:slo_http_errors:ratio_rate30m{job="checkout-orchestrator"} > (6.0 * 0.0005)
+            )
+          for: 5m
+          labels:
+            severity: page_p1
+            release_gate: freeze

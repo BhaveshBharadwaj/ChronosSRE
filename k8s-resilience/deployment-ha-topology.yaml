@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout-orchestrator
+  namespace: prod
+  labels:
+    app: checkout-orchestrator
+    tier: critical-sre
+spec:
+  replicas: 16
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: checkout-orchestrator
+  template:
+    metadata:
+      labels:
+        app: checkout-orchestrator
+    spec:
+      # Guarantee even distribution across all 3 Availability Zones (ap-south-1a, 1b, 1c)
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: checkout-orchestrator
+      containers:
+        - name: orchestrator
+          image: ghcr.io/chronos-sre/checkout-orchestrator:v2.8.3-stable
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+          readinessProbe:
+            httpGet:
+              path: /healthz/ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz/live
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
